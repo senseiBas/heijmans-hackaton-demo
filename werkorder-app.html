@@ -44,6 +44,13 @@
             opacity: 0.9;
         }
 
+        .monteur-name {
+            font-size: 14px;
+            color: #FDB913;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
         .card {
             background: white;
             border-radius: 0 0 12px 12px;
@@ -268,6 +275,7 @@
         <div class="header">
             <div class="logo">HEIJMANS</div>
             <div class="subtitle">Monteur Werkorder Systeem</div>
+            <div class="monteur-name" id="monteurName">👷 Monteur: --</div>
         </div>
         
         <div class="card">
@@ -363,7 +371,7 @@
         // CONFIGURATIE
         // ============================================
         const CONFIG = {
-            apiUrl: 'https://heijmans-demo-api.azurewebsites.net', // Azure Function API
+            apiUrl: 'http://localhost:5000', // Local Python Flask API
             refreshInterval: 3000 // 3 seconden
         };
 
@@ -398,10 +406,62 @@
         // FUNCTIES
         // ============================================
         
-        function loadWorkorder() {
-            // Voor nu: gebruik mock data
-            // Later: fetch van API
-            updateUI(MOCK_DATA);
+        async function loadWorkorder() {
+            try {
+                console.log('Loading assets and werkorder from API...');
+                
+                // Haal werkorder, huidige installatie en nieuwe levering op
+                const [werkorderResponse, currentResponse, newResponse] = await Promise.all([
+                    fetch(`${CONFIG.apiUrl}/api/werkorder/current`),
+                    fetch(`${CONFIG.apiUrl}/api/asset/1000`),
+                    fetch(`${CONFIG.apiUrl}/api/asset/2000`)
+                ]);
+
+                if (!currentResponse.ok || !newResponse.ok) {
+                    throw new Error('Fout bij ophalen assets');
+                }
+
+                const werkorderData = await werkorderResponse.json();
+                const currentData = await currentResponse.json();
+                const newData = await newResponse.json();
+
+                console.log('Werkorder:', werkorderData);
+                console.log('Current asset:', currentData);
+                console.log('New asset:', newData);
+
+                // Update header met monteur naam
+                if (werkorderData.success && werkorderData.werkorder) {
+                    const monteurNaam = werkorderData.werkorder.uitvoerder || 'Onbekend';
+                    document.getElementById('monteurName').textContent = `👷 Monteur: ${monteurNaam}`;
+                }
+
+                // Update UI met echte data
+                if (currentData.success && newData.success) {
+                    const current = currentData.asset;
+                    const newAsset = newData.asset;
+                    
+                    const data = {
+                        current: {
+                            location: 'Jongerencentrum Attak, Tilburg', // Placeholder
+                            model: current.DisplayName || 'Onbekend',
+                            serial: current.Code || 'Onbekend',
+                            supplier: 'Heijmans' // Placeholder
+                        },
+                        new: {
+                            location: 'Jongerencentrum Attak, Tilburg', // Placeholder
+                            model: newAsset.DisplayName || 'Onbekend',
+                            serial: newAsset.Code || 'Onbekend',
+                            supplier: 'Heijmans', // Placeholder
+                            price: 9200 // Placeholder - geen prijs in assets tabel
+                        }
+                    };
+                    updateUI(data);
+                }
+            } catch (error) {
+                console.error('Error loading workorder:', error);
+                // Fallback naar mock data
+                updateUI(MOCK_DATA);
+            }
         }
 
         function updateUI(data) {

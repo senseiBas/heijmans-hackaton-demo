@@ -16,8 +16,8 @@ DATABRICKS_CONFIG = {
     'token': 'dapiebca5706c83ec913f50c0ab9e15e1e8c',
     'warehouse_id': 'b0b9bd45f760040f',
     'catalog': 'gebouwdossier',
-    'schema': 'testsql',
-    'table': 'test'
+    'schema': 'hackathon',
+    'table': 'werkorders_storingen'
 }
 
 @app.route('/api/order', methods=['POST'])
@@ -36,12 +36,23 @@ def create_order():
         print("="*60)
         print(f"\nVolledige data:\n{json.dumps(order_data, indent=2)}")
         
-        # Create SQL statement for gebouwdossier.testsql.test
-        # Based on the example: INSERT INTO gebouwdossier.testsql.test VALUES (2, 'Bob', 20.0), (3, 'Carol', 30.5);
-        # Assuming columns are: id (INT), name (STRING), value (DECIMAL)
+        # Create SQL statement for gebouwdossier.hackathon.werkorders_storingen
+        # Insert new record with asset_oud=1000 and asset_nieuw=2000
         sql_statement = f"""
-            INSERT INTO {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.{DATABRICKS_CONFIG['table']} VALUES
-            ({hash(order_data['orderId']) % 1000000}, '{escape_sql(order_data['modelnaam'])}', {order_data['prijs']})
+            INSERT INTO {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.{DATABRICKS_CONFIG['table']} (
+                werkorder_id, storing_id, datum_aanmaak, omschrijving, status, uitvoerder, datum_uitgevoerd, contractid, asset_oud, asset_nieuw
+            ) VALUES (
+                '{escape_sql(order_data.get('orderId', 'WO000'))}',
+                '{escape_sql(order_data.get('storingId', 'S000'))}',
+                '{order_data.get('datumAanmaak', '2025-12-04')}',
+                '{escape_sql(order_data.get('omschrijving', 'Regelkast bestelling'))}',
+                'open',
+                '{escape_sql(order_data.get('uitvoerder', 'Marc'))}',
+                NULL,
+                {order_data.get('contractId', 1)},
+                1000,
+                2000
+            )
         """
         
         # Databricks SQL API endpoint
@@ -95,6 +106,157 @@ def create_order():
 def escape_sql(value):
     """Escape single quotes for SQL"""
     return value.replace("'", "''")
+
+@app.route('/api/werkorder/current', methods=['GET'])
+def get_current_werkorder():
+    """Get current werkorder with asset_oud=1000 and asset_nieuw=2000"""
+    try:
+        print(f"\n📋 Ophalen huidige werkorder...")
+        
+        # SQL query to get werkorder with asset 1000 and 2000
+        sql_statement = f"""
+            SELECT * FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.{DATABRICKS_CONFIG['table']}
+            WHERE asset_oud = 1000 AND asset_nieuw = 2000
+        """
+        
+        # Databricks SQL API endpoint
+        api_url = f"https://{DATABRICKS_CONFIG['host']}/api/2.0/sql/statements"
+        
+        # Request body
+        request_body = {
+            'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+            'statement': sql_statement,
+            'wait_timeout': '30s'
+        }
+        
+        print(f"Query: {sql_statement}")
+        
+        # Make request to Databricks
+        response = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json=request_body,
+            timeout=35
+        )
+        
+        if response.ok:
+            result = response.json()
+            
+            # Extract data from Databricks response
+            if result.get('status', {}).get('state') == 'SUCCEEDED':
+                data_array = result.get('result', {}).get('data_array', [])
+                if data_array and len(data_array) > 0:
+                    columns = [col['name'] for col in result.get('manifest', {}).get('schema', {}).get('columns', [])]
+                    werkorder_data = dict(zip(columns, data_array[0]))
+                    print(f"✅ Werkorder gevonden voor monteur: {werkorder_data.get('uitvoerder', 'Onbekend')}")
+                    return jsonify({
+                        'success': True,
+                        'werkorder': werkorder_data
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Geen werkorder gevonden'
+                    }), 404
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Query niet succesvol'
+                }), 500
+        else:
+            error_text = response.text
+            print(f"❌ Error from Databricks: {response.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Databricks error: {response.status_code}",
+                'details': error_text
+            }), response.status_code
+            
+    except Exception as e:
+        print(f"❌ Exception: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/asset/<int:asset_id>', methods=['GET'])
+def get_asset(asset_id):
+    """Get asset details from Databricks assets table"""
+    try:
+        print(f"\n📦 Ophalen asset ID: {asset_id}")
+        
+        # SQL query to get asset by ID
+        sql_statement = f"""
+            SELECT * FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.assets
+            WHERE id = {asset_id}
+        """
+        
+        # Databricks SQL API endpoint
+        api_url = f"https://{DATABRICKS_CONFIG['host']}/api/2.0/sql/statements"
+        
+        # Request body
+        request_body = {
+            'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+            'statement': sql_statement,
+            'wait_timeout': '30s'
+        }
+        
+        print(f"Query: {sql_statement}")
+        
+        # Make request to Databricks
+        response = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json=request_body,
+            timeout=35
+        )
+        
+        if response.ok:
+            result = response.json()
+            print(f"✅ Asset gevonden!")
+            
+            # Extract data from Databricks response
+            if result.get('status', {}).get('state') == 'SUCCEEDED':
+                data_array = result.get('result', {}).get('data_array', [])
+                if data_array and len(data_array) > 0:
+                    # Assuming columns are returned in the manifest
+                    columns = [col['name'] for col in result.get('manifest', {}).get('schema', {}).get('columns', [])]
+                    asset_data = dict(zip(columns, data_array[0]))
+                    return jsonify({
+                        'success': True,
+                        'asset': asset_data
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Asset niet gevonden'
+                    }), 404
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Query niet succesvol'
+                }), 500
+        else:
+            error_text = response.text
+            print(f"❌ Error from Databricks: {response.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Databricks error: {response.status_code}",
+                'details': error_text
+            }), response.status_code
+            
+    except Exception as e:
+        print(f"❌ Exception: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/swap', methods=['POST'])
 def swap_installation():

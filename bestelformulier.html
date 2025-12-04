@@ -425,8 +425,8 @@
         });
 
         async function uploadToDatabricks(orderData) {
-            // Use local proxy server to bypass CORS
-            const proxyUrl = 'http://10.98.2.112:5000/api/order';
+            // Azure Function API endpoint
+            const proxyUrl = 'https://heijmans-demo-api.azurewebsites.net/api/order';
             
             console.log('Sending order to proxy server:', orderData);
 

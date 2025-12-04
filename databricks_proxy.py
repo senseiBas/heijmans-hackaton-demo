@@ -364,6 +364,103 @@ def swap_installation():
             'error': str(e)
         }), 500
 
+@app.route('/api/reset', methods=['POST', 'GET'])
+def reset_assets():
+    """Reset assets to initial state: asset 1000 -> RoomId 21, asset 2000 -> RoomId NULL"""
+    try:
+        print("\n" + "="*60)
+        print("🔄 RESET ASSETS!")
+        print("="*60)
+        
+        # Databricks SQL API endpoint
+        api_url = f"https://{DATABRICKS_CONFIG['host']}/api/2.0/sql/statements"
+        
+        # Reset 1: Set asset 1000 RoomId to 21
+        reset1_statement = f"""
+            UPDATE {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.assets 
+            SET RoomId = 21 
+            WHERE Id = 1000
+        """
+        
+        print(f"Executing reset 1:\n{reset1_statement}")
+        
+        response1 = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+                'statement': reset1_statement,
+                'wait_timeout': '30s'
+            },
+            timeout=35
+        )
+        
+        if not response1.ok:
+            error_text = response1.text
+            print(f"❌ Error bij reset 1: {response1.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Reset 1 failed: {response1.status_code}",
+                'details': error_text
+            }), response1.status_code
+        
+        print(f"✅ Asset 1000 RoomId set to 21")
+        
+        # Reset 2: Set asset 2000 RoomId to NULL
+        reset2_statement = f"""
+            UPDATE {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.assets 
+            SET RoomId = NULL 
+            WHERE Id = 2000
+        """
+        
+        print(f"Executing reset 2:\n{reset2_statement}")
+        
+        response2 = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+                'statement': reset2_statement,
+                'wait_timeout': '30s'
+            },
+            timeout=35
+        )
+        
+        if not response2.ok:
+            error_text = response2.text
+            print(f"❌ Error bij reset 2: {response2.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Reset 2 failed: {response2.status_code}",
+                'details': error_text
+            }), response2.status_code
+        
+        print(f"✅ Asset 2000 RoomId set to NULL")
+        print(f"✅ Reset compleet!")
+        print("="*60 + "\n")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assets gereset naar initiële staat',
+            'details': {
+                'asset_1000_roomid': 21,
+                'asset_2000_roomid': None
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"\n❌ Error bij reset: {str(e)}\n")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""

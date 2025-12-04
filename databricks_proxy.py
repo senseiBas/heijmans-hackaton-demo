@@ -275,7 +275,81 @@ def swap_installation():
         print(f"\nVolledige data:\n{json.dumps(swap_data, indent=2)}")
         print("="*60 + "\n")
         
-        # TODO: Later hier Databricks update doen
+        # Update RoomId voor beide assets
+        # Asset 1000: RoomId = NULL (oude kast verwijderd)
+        # Asset 2000: RoomId = 21 (nieuwe kast geïnstalleerd)
+        
+        # Databricks SQL API endpoint
+        api_url = f"https://{DATABRICKS_CONFIG['host']}/api/2.0/sql/statements"
+        
+        # Update 1: Set asset 1000 RoomId to NULL
+        update1_statement = f"""
+            UPDATE {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.assets 
+            SET RoomId = NULL 
+            WHERE Id = 1000
+        """
+        
+        print(f"Executing update 1:\n{update1_statement}")
+        
+        response1 = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+                'statement': update1_statement,
+                'wait_timeout': '30s'
+            },
+            timeout=35
+        )
+        
+        if not response1.ok:
+            error_text = response1.text
+            print(f"❌ Error bij update 1: {response1.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Update 1 failed: {response1.status_code}",
+                'details': error_text
+            }), response1.status_code
+        
+        print(f"✅ Asset 1000 RoomId set to NULL")
+        
+        # Update 2: Set asset 2000 RoomId to 21
+        update2_statement = f"""
+            UPDATE {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.assets 
+            SET RoomId = 21 
+            WHERE Id = 2000
+        """
+        
+        print(f"Executing update 2:\n{update2_statement}")
+        
+        response2 = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {DATABRICKS_CONFIG['token']}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'warehouse_id': DATABRICKS_CONFIG['warehouse_id'],
+                'statement': update2_statement,
+                'wait_timeout': '30s'
+            },
+            timeout=35
+        )
+        
+        if not response2.ok:
+            error_text = response2.text
+            print(f"❌ Error bij update 2: {response2.status_code} - {error_text}")
+            return jsonify({
+                'success': False,
+                'error': f"Update 2 failed: {response2.status_code}",
+                'details': error_text
+            }), response2.status_code
+        
+        print(f"✅ Asset 2000 RoomId set to 21")
+        print(f"✅ Alle assets succesvol geupdatet!")
         
         return jsonify({
             'success': True,

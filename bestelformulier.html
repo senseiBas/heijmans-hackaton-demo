@@ -306,7 +306,7 @@
                 </form>
 
                 <div class="success-message" id="successMessage">
-                    ✅ Bestelling succesvol geplaatst! Data is opgeslagen in Azure Blob Storage.
+                    ✅ Bestelling succesvol geplaatst! Data is opgeslagen in Databricks.
                 </div>
 
                 <div class="error-message" id="errorMessage"></div>
@@ -316,13 +316,15 @@
 
     <script>
         // ============================================
-        // AZURE BLOB STORAGE CONFIGURATIE
-        // Vervang deze waarden met je eigen connection string
+        // DATABRICKS CONFIGURATIE
         // ============================================
-        const AZURE_CONFIG = {
-            connectionString: 'YOUR_CONNECTION_STRING_HERE', // Vul hier je connection string in
-            containerName: 'bestellingen', // Container naam
-            blobPrefix: 'regelkast-order-' // Prefix voor blob namen
+        const DATABRICKS_CONFIG = {
+            host: 'dbc-a3122420-cda0.cloud.databricks.com',
+            httpPath: '/sql/1.0/warehouses/b0b9bd45f760040f',
+            token: 'dapiebca5706c83ec913f50c0ab9e15e1e8c',
+            catalog: 'default',
+            schema: 'default',
+            table: 'regelkast_bestellingen'
         };
 
         // ============================================
@@ -396,8 +398,8 @@
                     orderId: `ORD-${Date.now()}`
                 };
 
-                // Upload to Azure Blob Storage
-                await uploadToAzureBlob(orderData);
+                // Upload to Databricks
+                await uploadToDatabricks(orderData);
 
                 // Show success message
                 successMessage.style.display = 'block';
@@ -422,81 +424,57 @@
             }
         });
 
-        async function uploadToAzureBlob(orderData) {
-            // Check if connection string is configured
-            if (AZURE_CONFIG.connectionString === 'YOUR_CONNECTION_STRING_HERE') {
-                throw new Error('Azure connection string niet geconfigureerd! Update de AZURE_CONFIG in de code.');
-            }
+        async function uploadToDatabricks(orderData) {
+            // Databricks SQL API endpoint
+            const apiUrl = `https://${DATABRICKS_CONFIG.host}/api/2.0/sql/statements`;
+            
+            // Create INSERT statement
+            const sqlStatement = `
+                INSERT INTO ${DATABRICKS_CONFIG.catalog}.${DATABRICKS_CONFIG.schema}.${DATABRICKS_CONFIG.table}
+                (order_id, modelnaam, locatie, serienummer, leverancier, prijs, bestel_datum, created_at)
+                VALUES (
+                    '${orderData.orderId}',
+                    '${escapeSql(orderData.modelnaam)}',
+                    '${escapeSql(orderData.locatie)}',
+                    '${escapeSql(orderData.serienummer)}',
+                    '${escapeSql(orderData.leverancier)}',
+                    ${orderData.prijs},
+                    '${orderData.bestelDatum}',
+                    current_timestamp()
+                )
+            `;
 
-            // Extract storage account name and key from connection string
-            const accountMatch = AZURE_CONFIG.connectionString.match(/AccountName=([^;]+)/);
-            const keyMatch = AZURE_CONFIG.connectionString.match(/AccountKey=([^;]+)/);
-            
-            if (!accountMatch || !keyMatch) {
-                throw new Error('Ongeldige connection string format');
-            }
+            const requestBody = {
+                warehouse_id: DATABRICKS_CONFIG.httpPath.split('/').pop(),
+                statement: sqlStatement,
+                wait_timeout: '10s'
+            };
 
-            const accountName = accountMatch[1];
-            const accountKey = keyMatch[1];
-            
-            // Generate blob name with timestamp
-            const blobName = `${AZURE_CONFIG.blobPrefix}${Date.now()}.json`;
-            const url = `https://${accountName}.blob.core.windows.net/${AZURE_CONFIG.containerName}/${blobName}`;
-            
-            // Prepare blob content
-            const content = JSON.stringify(orderData, null, 2);
-            const contentLength = new Blob([content]).size;
-            
-            // Create authorization header
-            const dateString = new Date().toUTCString();
-            const stringToSign = `PUT\n\n\n${contentLength}\n\napplication/json\n\n\n\n\n\n\nx-ms-blob-type:BlockBlob\nx-ms-date:${dateString}\nx-ms-version:2020-10-02\n/${accountName}/${AZURE_CONFIG.containerName}/${blobName}`;
-            
-            // Note: For production, use Azure SDK. This is simplified for demo purposes.
-            // In a real scenario, you would use Azure SDK or a backend service to handle authentication.
-            
-            const response = await fetch(url, {
-                method: 'PUT',
+            console.log('Sending to Databricks:', sqlStatement);
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
                 headers: {
-                    'x-ms-blob-type': 'BlockBlob',
-                    'x-ms-date': dateString,
-                    'x-ms-version': '2020-10-02',
-                    'Content-Type': 'application/json',
-                    'Content-Length': contentLength.toString(),
-                    'Authorization': `SharedKey ${accountName}:${await generateAuthSignature(stringToSign, accountKey)}`
+                    'Authorization': `Bearer ${DATABRICKS_CONFIG.token}`,
+                    'Content-Type': 'application/json'
                 },
-                body: content
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
-                throw new Error(`Azure upload failed: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                console.error('Databricks error:', errorText);
+                throw new Error(`Databricks upload failed: ${response.status} ${response.statusText}`);
             }
 
-            console.log('Order uploaded successfully:', blobName);
-            return blobName;
+            const result = await response.json();
+            console.log('Order uploaded successfully to Databricks:', result);
+            return result;
         }
 
-        async function generateAuthSignature(stringToSign, accountKey) {
-            // Decode base64 key
-            const keyBytes = Uint8Array.from(atob(accountKey), c => c.charCodeAt(0));
-            
-            // Import key for HMAC
-            const cryptoKey = await crypto.subtle.importKey(
-                'raw',
-                keyBytes,
-                { name: 'HMAC', hash: 'SHA-256' },
-                false,
-                ['sign']
-            );
-            
-            // Sign the string
-            const signature = await crypto.subtle.sign(
-                'HMAC',
-                cryptoKey,
-                new TextEncoder().encode(stringToSign)
-            );
-            
-            // Convert to base64
-            return btoa(String.fromCharCode(...new Uint8Array(signature)));
+        function escapeSql(value) {
+            // Escape single quotes for SQL
+            return value.replace(/'/g, "''");
         }
     </script>
 </body>

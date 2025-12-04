@@ -14,7 +14,10 @@ CORS(app)  # Enable CORS for all routes
 DATABRICKS_CONFIG = {
     'host': 'dbc-a3122420-cda0.cloud.databricks.com',
     'token': 'dapiebca5706c83ec913f50c0ab9e15e1e8c',
-    'warehouse_id': 'b0b9bd45f760040f'
+    'warehouse_id': 'b0b9bd45f760040f',
+    'catalog': 'gebouwdossier',
+    'schema': 'testsql',
+    'table': 'test'
 }
 
 @app.route('/api/order', methods=['POST'])
@@ -24,20 +27,12 @@ def create_order():
         order_data = request.json
         print(f"Received order: {json.dumps(order_data, indent=2)}")
         
-        # Create SQL statement
+        # Create SQL statement for gebouwdossier.testsql.test
+        # Based on the example: INSERT INTO gebouwdossier.testsql.test VALUES (2, 'Bob', 20.0), (3, 'Carol', 30.5);
+        # Assuming columns are: id (INT), name (STRING), value (DECIMAL)
         sql_statement = f"""
-            INSERT INTO default.default.regelkast_bestellingen
-            (order_id, modelnaam, locatie, serienummer, leverancier, prijs, bestel_datum, created_at)
-            VALUES (
-                '{order_data['orderId']}',
-                '{escape_sql(order_data['modelnaam'])}',
-                '{escape_sql(order_data['locatie'])}',
-                '{escape_sql(order_data['serienummer'])}',
-                '{escape_sql(order_data['leverancier'])}',
-                {order_data['prijs']},
-                '{order_data['bestelDatum']}',
-                current_timestamp()
-            )
+            INSERT INTO {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.{DATABRICKS_CONFIG['table']} VALUES
+            ({hash(order_data['orderId']) % 1000000}, '{escape_sql(order_data['modelnaam'])}', {order_data['prijs']})
         """
         
         # Databricks SQL API endpoint

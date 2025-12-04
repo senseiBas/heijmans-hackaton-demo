@@ -2,10 +2,11 @@
 Databricks Proxy Server
 Simple Flask server to bypass CORS restrictions for Databricks API calls
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 import json
+import os
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -465,6 +466,37 @@ def reset_assets():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'service': 'databricks-proxy'}), 200
+
+@app.route('/')
+def index():
+    """Serve index page with links"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Heijmans Demo</title>
+        <style>
+            body { font-family: Arial; padding: 50px; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+            h1 { color: #1E3A5F; }
+            a { display: block; padding: 15px; margin: 10px 0; background: #FDB913; color: #1E3A5F; text-decoration: none; border-radius: 5px; text-align: center; font-weight: bold; }
+            a:hover { background: #e5a711; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🏗️ Heijmans Hackathon Demo</h1>
+            <a href="/bestelformulier.html">📦 Bestelformulier</a>
+            <a href="/werkorder-app.html">👷 Werkorder App</a>
+        </div>
+    </body>
+    </html>
+    """
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    """Serve HTML files"""
+    return send_from_directory('.', filename)
 
 if __name__ == '__main__':
     print("=" * 60)

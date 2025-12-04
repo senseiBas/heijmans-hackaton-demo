@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heijmans Gebouwonderhoud - Gasketel Bestellen</title>
+    <title>Heijmans Gebouwonderhoud - Regelkast Bestellen</title>
     <style>
         * {
             margin: 0;
@@ -225,28 +225,28 @@
     <div class="container">
         <div class="header">
             <div class="logo">HEIJMANS</div>
-            <div class="subtitle">Gebouwonderhoud - Gasketel Bestelsysteem</div>
+            <div class="subtitle">Gebouwonderhoud - Regelkast Luchtbehandelingssysteem</div>
         </div>
         
         <div class="card">
             <div class="product-section">
-                <h2 class="section-title">Selecteer uw gasketel</h2>
+                <h2 class="section-title">Selecteer uw regelkast</h2>
                 
                 <form id="orderForm">
                     <div class="form-group">
                         <label for="productSelect">
-                            Kies model <span class="info-badge">Vooraf ingevuld</span>
+                            Kies regelkast <span class="info-badge">Vooraf ingevuld</span>
                         </label>
                         <select id="productSelect" required>
-                            <option value="">-- Selecteer een gasketel --</option>
-                            <option value='{"modelnaam":"Remeha Tzerra M 28c","serienummer":"REM-TZ28C-2024","prijs":2495,"capaciteit":28}' selected>
-                                Remeha Tzerra M 28c - HR Combiketel (28 kW) - €2.495
+                            <option value="">-- Selecteer een regelkast --</option>
+                            <option value='{"modelnaam":"RK1 (2019)","locatie":"R-Newt, Tilburg","serienummer":"190075","leverancier":"TH Klimaatbeheersing / BAM","prijs":8750}' selected>
+                                RK1 (2019) - R-Newt, Tilburg - €8.750
                             </option>
-                            <option value='{"modelnaam":"Nefit ProLine NxT HRC 30","serienummer":"NFT-PL30-2024","prijs":3150,"capaciteit":30}'>
-                                Nefit ProLine NxT HRC 30 - Premium HR ketel (30 kW) - €3.150
+                            <option value='{"modelnaam":"RK1 (Siemens, oud)","locatie":"Jongerencentrum Attak, Tilburg","serienummer":"SB03711 / 48017","leverancier":"H. de Bont Klimaattechniek / Siemens","prijs":6500}'>
+                                RK1 (Siemens, oud) - Jongerencentrum Attak - €6.500
                             </option>
-                            <option value='{"modelnaam":"Intergas Kombi Kompakt HRE 36/30","serienummer":"ITG-KK3630-2024","prijs":2875,"capaciteit":36}'>
-                                Intergas Kombi Kompakt HRE 36/30 - Compact model (36 kW) - €2.875
+                            <option value='{"modelnaam":"RK2 (2021)","locatie":"Sporthal De Blaak, Tilburg","serienummer":"210342","leverancier":"Klimaat Techniek Partners","prijs":9200}'>
+                                RK2 (2021) - Sporthal De Blaak - €9.200
                             </option>
                         </select>
                     </div>
@@ -257,8 +257,18 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="serienummer">Serienummer / Modelnummer</label>
+                        <label for="locatie">Locatie</label>
+                        <input type="text" id="locatie" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serienummer">Serienummer</label>
                         <input type="text" id="serienummer" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="leverancier">Leverancier</label>
+                        <input type="text" id="leverancier" readonly>
                     </div>
 
                     <div class="form-group">
@@ -266,28 +276,27 @@
                         <input type="number" id="prijs" readonly>
                     </div>
 
-                    <div class="form-group">
-                        <label for="capaciteit">Capaciteit (kW)</label>
-                        <input type="number" id="capaciteit" readonly>
-                    </div>
-
                     <div class="product-preview">
                         <div class="preview-title">📋 Bestelling overzicht</div>
                         <div class="preview-item">
-                            <span class="preview-label">Model:</span>
-                            <span class="preview-value" id="previewModel">Remeha Tzerra M 28c</span>
+                            <span class="preview-label">Regelkast:</span>
+                            <span class="preview-value" id="previewModel">RK1 (2019)</span>
                         </div>
                         <div class="preview-item">
-                            <span class="preview-label">Serie:</span>
-                            <span class="preview-value" id="previewSerial">REM-TZ28C-2024</span>
+                            <span class="preview-label">Locatie:</span>
+                            <span class="preview-value" id="previewLocation">R-Newt, Tilburg</span>
                         </div>
                         <div class="preview-item">
-                            <span class="preview-label">Capaciteit:</span>
-                            <span class="preview-value" id="previewCapacity">28 kW</span>
+                            <span class="preview-label">Serienummer:</span>
+                            <span class="preview-value" id="previewSerial">190075</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Leverancier:</span>
+                            <span class="preview-value" id="previewSupplier">TH Klimaatbeheersing / BAM</span>
                         </div>
                         <div class="preview-item" style="margin-top: 10px; padding-top: 10px; border-top: 2px solid #e0e0e0;">
                             <span class="preview-label">Totaal:</span>
-                            <span class="price-display" id="previewPrice">€2.495</span>
+                            <span class="price-display" id="previewPrice">€8.750</span>
                         </div>
                     </div>
 
@@ -313,7 +322,7 @@
         const AZURE_CONFIG = {
             connectionString: 'YOUR_CONNECTION_STRING_HERE', // Vul hier je connection string in
             containerName: 'bestellingen', // Container naam
-            blobPrefix: 'gasketel-order-' // Prefix voor blob namen
+            blobPrefix: 'regelkast-order-' // Prefix voor blob namen
         };
 
         // ============================================
@@ -322,9 +331,10 @@
         
         const productSelect = document.getElementById('productSelect');
         const modelnaamInput = document.getElementById('modelnaam');
+        const locatieInput = document.getElementById('locatie');
         const serienummerInput = document.getElementById('serienummer');
+        const leverancierInput = document.getElementById('leverancier');
         const prijsInput = document.getElementById('prijs');
-        const capaciteitInput = document.getElementById('capaciteit');
         const orderForm = document.getElementById('orderForm');
         const orderButton = document.getElementById('orderButton');
         const successMessage = document.getElementById('successMessage');
@@ -332,8 +342,9 @@
 
         // Preview elements
         const previewModel = document.getElementById('previewModel');
+        const previewLocation = document.getElementById('previewLocation');
         const previewSerial = document.getElementById('previewSerial');
-        const previewCapacity = document.getElementById('previewCapacity');
+        const previewSupplier = document.getElementById('previewSupplier');
         const previewPrice = document.getElementById('previewPrice');
 
         // Initialize met eerste optie
@@ -348,14 +359,16 @@
             if (selectedOption) {
                 const product = JSON.parse(selectedOption);
                 modelnaamInput.value = product.modelnaam;
+                locatieInput.value = product.locatie;
                 serienummerInput.value = product.serienummer;
+                leverancierInput.value = product.leverancier;
                 prijsInput.value = product.prijs;
-                capaciteitInput.value = product.capaciteit;
 
                 // Update preview
                 previewModel.textContent = product.modelnaam;
+                previewLocation.textContent = product.locatie;
                 previewSerial.textContent = product.serienummer;
-                previewCapacity.textContent = `${product.capaciteit} kW`;
+                previewSupplier.textContent = product.leverancier;
                 previewPrice.textContent = `€${product.prijs.toLocaleString('nl-NL')}`;
             }
         }
@@ -375,9 +388,10 @@
                 // Prepare order data
                 const orderData = {
                     modelnaam: modelnaamInput.value,
+                    locatie: locatieInput.value,
                     serienummer: serienummerInput.value,
+                    leverancier: leverancierInput.value,
                     prijs: parseFloat(prijsInput.value),
-                    capaciteit: parseFloat(capaciteitInput.value),
                     bestelDatum: new Date().toISOString(),
                     orderId: `ORD-${Date.now()}`
                 };

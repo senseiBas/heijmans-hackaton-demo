@@ -25,7 +25,16 @@ def create_order():
     """Receive order data and send it to Databricks"""
     try:
         order_data = request.json
-        print(f"Received order: {json.dumps(order_data, indent=2)}")
+        
+        print("\n" + "="*60)
+        print("🚀 NIEUWE BESTELLING ONTVANGEN!")
+        print("="*60)
+        print(f"Order ID: {order_data.get('orderId', 'N/A')}")
+        print(f"Model: {order_data.get('modelnaam', 'N/A')}")
+        print(f"Locatie: {order_data.get('locatie', 'N/A')}")
+        print(f"Prijs: €{order_data.get('prijs', 'N/A')}")
+        print("="*60)
+        print(f"\nVolledige data:\n{json.dumps(order_data, indent=2)}")
         
         # Create SQL statement for gebouwdossier.testsql.test
         # Based on the example: INSERT INTO gebouwdossier.testsql.test VALUES (2, 'Bob', 20.0), (3, 'Carol', 30.5);
@@ -87,6 +96,38 @@ def escape_sql(value):
     """Escape single quotes for SQL"""
     return value.replace("'", "''")
 
+@app.route('/api/swap', methods=['POST'])
+def swap_installation():
+    """Receive swap request from werkorder app"""
+    try:
+        swap_data = request.json
+        
+        print("\n" + "="*60)
+        print("🔄 REGELKAST WISSEL ACTIE!")
+        print("="*60)
+        print(f"Van: {swap_data.get('currentModel', 'N/A')}")
+        print(f"Naar: {swap_data.get('newModel', 'N/A')}")
+        print(f"Locatie: {swap_data.get('location', 'N/A')}")
+        print(f"Prijs nieuwe kast: €{swap_data.get('price', 'N/A')}")
+        print("="*60)
+        print(f"\nVolledige data:\n{json.dumps(swap_data, indent=2)}")
+        print("="*60 + "\n")
+        
+        # TODO: Later hier Databricks update doen
+        
+        return jsonify({
+            'success': True,
+            'message': 'Regelkast succesvol gewisseld',
+            'timestamp': swap_data.get('timestamp')
+        }), 200
+        
+    except Exception as e:
+        print(f"\n❌ Error bij swap: {str(e)}\n")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -96,8 +137,12 @@ if __name__ == '__main__':
     print("=" * 60)
     print("🚀 Databricks Proxy Server Starting...")
     print("=" * 60)
-    print(f"Server will run on: http://localhost:5000")
+    print(f"Server will run on: http://10.98.2.112:5000")
+    print(f"Local access:    http://localhost:5000")
+    print(f"Network access:  http://10.98.2.112:5000")
     print(f"Databricks host: {DATABRICKS_CONFIG['host']}")
     print(f"Warehouse ID: {DATABRICKS_CONFIG['warehouse_id']}")
+    print("=" * 60)
+    print("⚠️  Make sure Windows Firewall allows port 5000!")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000)

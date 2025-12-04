@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heijmans Werkorder App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: #1E3A5F;
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FDB913;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .status-badge {
+            background: #FDB913;
+            color: #1E3A5F;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .installation-section {
+            padding: 25px;
+            border-bottom: 3px dashed #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .installation-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #1E3A5F;
+        }
+
+        .installation-card.new {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-icon {
+            font-size: 18px;
+            width: 30px;
+            flex-shrink: 0;
+        }
+
+        .detail-label {
+            color: #666;
+            margin-right: 8px;
+            font-size: 13px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #1E3A5F;
+            flex: 1;
+        }
+
+        .arrow-section {
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+        }
+
+        .arrow {
+            font-size: 32px;
+            color: #FDB913;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .arrow-text {
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .action-section {
+            padding: 25px;
+        }
+
+        .swap-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .swap-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .swap-button:active {
+            transform: translateY(0);
+        }
+
+        .swap-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-message {
+            display: none;
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            animation: slideIn 0.5s ease;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid white;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .price-badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .refresh-info {
+            text-align: center;
+            padding: 15px;
+            background: #e3f2fd;
+            color: #1976d2;
+            font-size: 13px;
+        }
+
+        .refresh-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HEIJMANS</div>
+            <div class="subtitle">Monteur Werkorder Systeem</div>
+        </div>
+        
+        <div class="card">
+            <div class="status-badge">
+                📋 Actieve Werkorder - Regelkast Vervanging
+            </div>
+
+            <div class="success-message" id="successMessage">
+                ✅ Regelkast succesvol gewisseld! Systeem bijgewerkt.
+            </div>
+
+            <div id="workorderContent">
+                <!-- Current Installation -->
+                <div class="installation-section">
+                    <div class="section-title">🔧 Huidige Installatie</div>
+                    <div class="installation-card">
+                        <div class="detail-row">
+                            <span class="detail-icon">📍</span>
+                            <span class="detail-value" id="currentLocation">Jongerencentrum Attak, Tilburg</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">🏷️</span>
+                            <span class="detail-label">Model:</span>
+                            <span class="detail-value" id="currentModel">RK1 (Siemens, oud)</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">#️⃣</span>
+                            <span class="detail-label">Serie:</span>
+                            <span class="detail-value" id="currentSerial">SB03711 / 48017</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">🏭</span>
+                            <span class="detail-label">Leverancier:</span>
+                            <span class="detail-value" id="currentSupplier">H. de Bont Klimaattechniek / Siemens</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arrow Section -->
+                <div class="arrow-section">
+                    <div class="arrow">⬇️</div>
+                    <div class="arrow-text">VERVANGEN DOOR</div>
+                </div>
+
+                <!-- New Installation -->
+                <div class="installation-section">
+                    <div class="section-title">✨ Nieuwe Levering</div>
+                    <div class="installation-card new">
+                        <div class="detail-row">
+                            <span class="detail-icon">📍</span>
+                            <span class="detail-value" id="newLocation">Jongerencentrum Attak, Tilburg</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">🏷️</span>
+                            <span class="detail-label">Model:</span>
+                            <span class="detail-value" id="newModel">RK2 (2021)</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">#️⃣</span>
+                            <span class="detail-label">Serie:</span>
+                            <span class="detail-value" id="newSerial">210342</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">🏭</span>
+                            <span class="detail-label">Leverancier:</span>
+                            <span class="detail-value" id="newSupplier">Klimaat Techniek Partners</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-icon">💰</span>
+                            <span class="price-badge" id="newPrice">€9.200</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="action-section">
+                    <button class="swap-button" id="swapButton">
+                        <span>🔄</span>
+                        <span>Wissel Regelkast</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="refresh-info">
+                <span class="refresh-dot"></span>
+                Auto-refresh actief - Nieuwe orders worden automatisch geladen
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATIE
+        // ============================================
+        const CONFIG = {
+            apiUrl: 'http://10.98.2.112:5000', // Python server op laptop IP
+            refreshInterval: 3000 // 3 seconden
+        };
+
+        // ============================================
+        // MOCK DATA (voor nu)
+        // Later vervangen met echte API calls
+        // ============================================
+        const MOCK_DATA = {
+            current: {
+                location: 'Jongerencentrum Attak, Tilburg',
+                model: 'RK1 (Siemens, oud)',
+                serial: 'SB03711 / 48017',
+                supplier: 'H. de Bont Klimaattechniek / Siemens'
+            },
+            new: {
+                location: 'Jongerencentrum Attak, Tilburg',
+                model: 'RK2 (2021)',
+                serial: '210342',
+                supplier: 'Klimaat Techniek Partners',
+                price: 9200
+            }
+        };
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const swapButton = document.getElementById('swapButton');
+        const successMessage = document.getElementById('successMessage');
+        const workorderContent = document.getElementById('workorderContent');
+
+        // ============================================
+        // FUNCTIES
+        // ============================================
+        
+        function loadWorkorder() {
+            // Voor nu: gebruik mock data
+            // Later: fetch van API
+            updateUI(MOCK_DATA);
+        }
+
+        function updateUI(data) {
+            // Update current installation
+            document.getElementById('currentLocation').textContent = data.current.location;
+            document.getElementById('currentModel').textContent = data.current.model;
+            document.getElementById('currentSerial').textContent = data.current.serial;
+            document.getElementById('currentSupplier').textContent = data.current.supplier;
+
+            // Update new installation
+            document.getElementById('newLocation').textContent = data.new.location;
+            document.getElementById('newModel').textContent = data.new.model;
+            document.getElementById('newSerial').textContent = data.new.serial;
+            document.getElementById('newSupplier').textContent = data.new.supplier;
+            document.getElementById('newPrice').textContent = `€${data.new.price.toLocaleString('nl-NL')}`;
+        }
+
+        async function swapInstallation() {
+            // Disable button
+            swapButton.disabled = true;
+            swapButton.innerHTML = '<span class="loading"></span><span>Wordt gewisseld...</span>';
+
+            try {
+                // Verstuur swap actie naar server
+                const swapData = {
+                    currentModel: MOCK_DATA.current.model,
+                    currentSerial: MOCK_DATA.current.serial,
+                    newModel: MOCK_DATA.new.model,
+                    newSerial: MOCK_DATA.new.serial,
+                    location: MOCK_DATA.new.location,
+                    price: MOCK_DATA.new.price,
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(`${CONFIG.apiUrl}/api/swap`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(swapData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                // Show success
+                workorderContent.style.display = 'none';
+                successMessage.classList.add('show');
+
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    successMessage.classList.remove('show');
+                    workorderContent.style.display = 'block';
+                    swapButton.disabled = false;
+                    swapButton.innerHTML = '<span>🔄</span><span>Wissel Regelkast</span>';
+                    
+                    // Swap de data (nieuwe wordt huidige)
+                    MOCK_DATA.current = { ...MOCK_DATA.new };
+                    MOCK_DATA.new = {
+                        location: 'Sporthal De Blaak, Tilburg',
+                        model: 'RK3 (2024)',
+                        serial: '240891',
+                        supplier: 'TH Klimaatbeheersing / BAM',
+                        price: 10500
+                    };
+                    updateUI(MOCK_DATA);
+                }, 3000);
+
+            } catch (error) {
+                console.error('Swap error:', error);
+                alert('Fout bij wisselen: ' + error.message);
+                swapButton.disabled = false;
+                swapButton.innerHTML = '<span>🔄</span><span>Wissel Regelkast</span>';
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        swapButton.addEventListener('click', swapInstallation);
+
+        // ============================================
+        // INITIALIZATION & AUTO-REFRESH
+        // ============================================
+        
+        // Load initial data
+        loadWorkorder();
+
+        // Auto-refresh (later: haal nieuwe orders op van API)
+        setInterval(() => {
+            // TODO: Later vervangen met echte API call om nieuwe orders op te halen
+            console.log('Auto-refresh: checking for new orders...');
+            // loadWorkorder();
+        }, CONFIG.refreshInterval);
+
+        console.log('🚀 Heijmans Werkorder App gestart');
+        console.log('📡 API URL:', CONFIG.apiUrl);
+        console.log('🔄 Auto-refresh interval:', CONFIG.refreshInterval + 'ms');
+    </script>
+</body>
+</html>

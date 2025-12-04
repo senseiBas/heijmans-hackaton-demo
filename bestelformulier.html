@@ -425,56 +425,28 @@
         });
 
         async function uploadToDatabricks(orderData) {
-            // Databricks SQL API endpoint
-            const apiUrl = `https://${DATABRICKS_CONFIG.host}/api/2.0/sql/statements`;
+            // Use local proxy server to bypass CORS
+            const proxyUrl = 'http://localhost:5000/api/order';
             
-            // Create INSERT statement
-            const sqlStatement = `
-                INSERT INTO ${DATABRICKS_CONFIG.catalog}.${DATABRICKS_CONFIG.schema}.${DATABRICKS_CONFIG.table}
-                (order_id, modelnaam, locatie, serienummer, leverancier, prijs, bestel_datum, created_at)
-                VALUES (
-                    '${orderData.orderId}',
-                    '${escapeSql(orderData.modelnaam)}',
-                    '${escapeSql(orderData.locatie)}',
-                    '${escapeSql(orderData.serienummer)}',
-                    '${escapeSql(orderData.leverancier)}',
-                    ${orderData.prijs},
-                    '${orderData.bestelDatum}',
-                    current_timestamp()
-                )
-            `;
+            console.log('Sending order to proxy server:', orderData);
 
-            const requestBody = {
-                warehouse_id: DATABRICKS_CONFIG.httpPath.split('/').pop(),
-                statement: sqlStatement,
-                wait_timeout: '10s'
-            };
-
-            console.log('Sending to Databricks:', sqlStatement);
-
-            const response = await fetch(apiUrl, {
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${DATABRICKS_CONFIG.token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(orderData)
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Databricks error:', errorText);
-                throw new Error(`Databricks upload failed: ${response.status} ${response.statusText}`);
+                const errorData = await response.json();
+                console.error('Proxy error:', errorData);
+                throw new Error(errorData.error || `Upload failed: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('Order uploaded successfully to Databricks:', result);
+            console.log('Order uploaded successfully:', result);
             return result;
-        }
-
-        function escapeSql(value) {
-            // Escape single quotes for SQL
-            return value.replace(/'/g, "''");
         }
     </script>
 </body>
